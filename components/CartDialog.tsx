@@ -14,10 +14,11 @@ interface Product {
 }
 
 interface CartItem {
-  id: number;
+  cart_item_id: number;
   product_id: number;
   quantity: number;
-  product?: Product;
+  name: string;
+  price: number;
 }
 
 interface CartDialogProps {
@@ -42,8 +43,7 @@ export default function CartDialog({
   if (!isOpen) return null;
 
   const total = cart.reduce((sum, item) => {
-    const price = item.product?.price || 0;
-    return sum + price * item.quantity;
+    return sum + item.price * item.quantity;
   }, 0);
 
   return (
@@ -79,19 +79,17 @@ export default function CartDialog({
             <div className="space-y-4">
               {cart.map((item) => (
                 <div
-                  key={item.id}
+                  key={item.cart_item_id}
                   className="flex items-center justify-between p-3 border rounded"
                 >
                   <div className="flex-1">
-                    <h3 className="font-semibold">{item.product?.name}</h3>
-                    <p className="text-sm text-gray-600">
-                      ${item.product?.price}
-                    </p>
+                    <h3 className="font-semibold">{item.name}</h3>
+                    <p className="text-sm text-gray-600">${item.price}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() =>
-                        onUpdateQuantity(item.id, item.quantity - 1)
+                        onUpdateQuantity(item.cart_item_id, item.quantity - 1)
                       }
                       className="bg-gray-200 hover:bg-gray-300 w-8 h-8 rounded flex items-center justify-center"
                     >
@@ -100,7 +98,7 @@ export default function CartDialog({
                     <span className="w-8 text-center">{item.quantity}</span>
                     <button
                       onClick={() =>
-                        onUpdateQuantity(item.id, item.quantity + 1)
+                        onUpdateQuantity(item.cart_item_id, item.quantity + 1)
                       }
                       className="bg-gray-200 hover:bg-gray-300 w-8 h-8 rounded flex items-center justify-center"
                     >

@@ -67,7 +67,6 @@ export default function Reviews({
 
       {isOpen && (
         <div className="mt-4 border-t pt-4">
-          {/* Add Review Form */}
           {currentUser && (
             <div className="mb-4 p-3 bg-gray-50 rounded">
               <h4 className="font-semibold mb-2">Add Your Review</h4>
@@ -112,7 +111,6 @@ export default function Reviews({
             </div>
           )}
 
-          {/* Reviews List */}
           <div className="space-y-2">
             {reviews.length > 0 ? (
               reviews.map((review: any) => (
