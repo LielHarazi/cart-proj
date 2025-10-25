@@ -1,7 +1,17 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
 
-const nextConfig: NextConfig = {
-  /* config options here */
+const nextConfig = {
+  typedRoutes: true,
+  experimental: {
+    // reactCompiler: true, // Removed - requires babel-plugin-react-compiler
+    optimizePackageImports: ["zvijude"],
+    serverActions: {
+      bodySizeLimit: "9mb",
+    },
+  },
+  devIndicators: false,
+  serverExternalPackages: ["knex"],
+  poweredByHeader: false,
 };
 
 export default nextConfig;
