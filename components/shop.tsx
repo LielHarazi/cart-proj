@@ -4,8 +4,8 @@ import { useState } from "react";
 import {
   addToCart,
   updateQuantity,
-  removeFromCart,
   signOut,
+  completePurchase,
 } from "@/app/actions";
 import Header from "@/components/Header";
 import ProductGrid from "@/components/ProductGrid";
@@ -72,9 +72,7 @@ export default function Shop({
   async function handleCheckout() {
     if (cart.items.length === 0) return;
 
-    for (const item of cart.items) {
-      await removeFromCart(item.cart_item_id);
-    }
+    await completePurchase();
 
     alert("Purchase Complete! Thank you for your purchase!");
     setCartOpen(false);

@@ -84,7 +84,7 @@ export default function Reviews({
                 >
                   {[1, 2, 3, 4, 5].map((num) => (
                     <option key={num} value={num}>
-                      {"⭐".repeat(num)}
+                      {num}
                     </option>
                   ))}
                 </select>
@@ -119,8 +119,8 @@ export default function Reviews({
                     <span className="font-semibold text-sm">
                       {review.username}
                     </span>
-                    <span className="text-sm">
-                      {"⭐".repeat(review.rating)}
+                    <span className="text-sm font-semibold">
+                      {review.rating}/5
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">{review.comment}</p>

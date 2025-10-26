@@ -1,7 +1,19 @@
 import { db } from "./db_conn";
 
 async function test() {
-  // 1️⃣ USERS TABLE
+  // מחיקת הטבלאות הישנות בסדר הנכון (תחילה התלויות)
+  const hasOldCartItems = await db.schema.hasTable("cart_items");
+  if (hasOldCartItems) {
+    await db.schema.dropTable("cart_items");
+    console.log("🗑️ Dropped old 'cart_items' table");
+  }
+
+  const hasOldCarts = await db.schema.hasTable("carts");
+  if (hasOldCarts) {
+    await db.schema.dropTable("carts");
+    console.log("🗑️ Dropped old 'carts' table");
+  }
+
   const hasUsers = await db.schema.hasTable("users");
   if (!hasUsers) {
     await db.schema.createTable("users", (table) => {
@@ -11,7 +23,7 @@ async function test() {
       table.timestamp("created_at").defaultTo(db.fn.now());
     });
   }
-  // 2️⃣ PRODUCTS TABLE
+
   const hasProducts = await db.schema.hasTable("products");
   if (!hasProducts) {
     await db.schema.createTable("products", (table) => {
@@ -24,7 +36,6 @@ async function test() {
     });
   }
 
-  // 3️⃣ REVIEWS TABLE
   const hasReviews = await db.schema.hasTable("reviews");
   if (!hasReviews) {
     await db.schema.createTable("reviews", (table) => {
@@ -48,10 +59,28 @@ async function test() {
     });
   }
 
-  // 4️⃣ CARTS TABLE
-  const hasCarts = await db.schema.hasTable("carts");
-  if (!hasCarts) {
-    await db.schema.createTable("carts", (table) => {
+  // יצירת cart_items חדש עם המבנה הפשוט
+  await db.schema.createTable("cart_items", (table) => {
+    table.increments("id").primary();
+    table
+      .integer("user_id")
+      .unsigned()
+      .references("id")
+      .inTable("users")
+      .onDelete("CASCADE");
+    table
+      .integer("product_id")
+      .unsigned()
+      .references("id")
+      .inTable("products")
+      .onDelete("CASCADE");
+    table.integer("quantity").defaultTo(1).checkPositive();
+  });
+  console.log("✅ Created new simplified 'cart_items' table");
+
+  const hasPurchases = await db.schema.hasTable("purchases");
+  if (!hasPurchases) {
+    await db.schema.createTable("purchases", (table) => {
       table.increments("id").primary();
       table
         .integer("user_id")
@@ -59,29 +88,14 @@ async function test() {
         .references("id")
         .inTable("users")
         .onDelete("CASCADE");
-      table.string("status", 20).defaultTo("active");
-      table.timestamp("created_at").defaultTo(db.fn.now());
-    });
-  }
-
-  // 5️⃣ CART_ITEMS TABLE
-  const hasCartItems = await db.schema.hasTable("cart_items");
-  if (!hasCartItems) {
-    await db.schema.createTable("cart_items", (table) => {
-      table.increments("id").primary();
-      table
-        .integer("cart_id")
-        .unsigned()
-        .references("id")
-        .inTable("carts")
-        .onDelete("CASCADE");
       table
         .integer("product_id")
         .unsigned()
         .references("id")
         .inTable("products")
         .onDelete("CASCADE");
-      table.integer("quantity").defaultTo(1).checkPositive();
+      table.integer("quantity").notNullable();
+      table.timestamp("created_at").defaultTo(db.fn.now());
     });
   }
 

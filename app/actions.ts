@@ -3,44 +3,28 @@ import { db } from "@/scripts/db_conn";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
-// Products
 export async function getProducts() {
   return await db("products").select("*").orderBy("created_at", "desc");
 }
 
-// Cart
 export async function getCart() {
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
-  if (!userId) return { items: [], total: 0 };
-
-  let cart = await db("carts")
-    .where("user_id", Number(userId))
-    .where("status", "active")
-    .first();
-
-  if (!cart) {
-    [cart] = await db("carts")
-      .insert({ user_id: Number(userId), status: "active" })
-      .returning("*");
-  }
+  if (!userId) return { items: [] };
 
   const items = await db("cart_items")
     .join("products", "cart_items.product_id", "products.id")
-    .where("cart_items.cart_id", cart.id)
+    .where("cart_items.user_id", Number(userId))
     .select(
       "cart_items.id as cart_item_id",
       "cart_items.quantity",
-      "products.*"
+      "cart_items.product_id",
+      "products.name",
+      "products.price"
     );
 
-  const total = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-
-  return { items, total };
+  return { items };
 }
 
 export async function addToCart(productId: number) {
@@ -49,19 +33,8 @@ export async function addToCart(productId: number) {
 
   if (!userId) return { error: "Not authenticated" };
 
-  let cart = await db("carts")
-    .where("user_id", Number(userId))
-    .where("status", "active")
-    .first();
-
-  if (!cart) {
-    [cart] = await db("carts")
-      .insert({ user_id: Number(userId), status: "active" })
-      .returning("*");
-  }
-
   const existingItem = await db("cart_items")
-    .where("cart_id", cart.id)
+    .where("user_id", Number(userId))
     .where("product_id", productId)
     .first();
 
@@ -71,7 +44,7 @@ export async function addToCart(productId: number) {
       .update({ quantity: existingItem.quantity + 1 });
   } else {
     await db("cart_items").insert({
-      cart_id: cart.id,
+      user_id: Number(userId),
       product_id: productId,
       quantity: 1,
     });
@@ -94,7 +67,6 @@ export async function removeFromCart(cartItemId: number) {
   revalidatePath("/");
 }
 
-// Reviews
 export async function getReviews(productId: number) {
   return await db("reviews")
     .join("users", "reviews.user_id", "users.id")
@@ -117,7 +89,6 @@ export async function addReview(data: any) {
   revalidatePath("/");
 }
 
-// Auth (simplified)
 export async function signUp(data: any) {
   const existing = await db("users").where("email", data.email).first();
   if (existing) {
@@ -159,4 +130,50 @@ export async function signOut() {
   const cookieStore = await cookies();
   cookieStore.delete("userId");
   revalidatePath("/");
+}
+
+export async function completePurchase() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+
+  if (!userId) return { error: "Not authenticated" };
+
+  const cartItems = await db("cart_items")
+    .where("user_id", Number(userId))
+    .select("*");
+
+  if (cartItems.length === 0) return { error: "Cart is empty" };
+
+  // שמירה בטבלת purchases
+  const purchases = cartItems.map((item) => ({
+    user_id: Number(userId),
+    product_id: item.product_id,
+    quantity: item.quantity,
+  }));
+
+  await db("purchases").insert(purchases);
+
+  // ניקוי העגלה
+  await db("cart_items").where("user_id", Number(userId)).del();
+
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function getPurchaseHistory() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+
+  if (!userId) return [];
+
+  return await db("purchases")
+    .join("products", "purchases.product_id", "products.id")
+    .where("purchases.user_id", Number(userId))
+    .select(
+      "purchases.quantity",
+      "purchases.created_at",
+      "products.name",
+      "products.price"
+    )
+    .orderBy("purchases.created_at", "desc");
 }
